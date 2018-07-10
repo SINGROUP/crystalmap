@@ -4,7 +4,11 @@ from describe.descriptors import MBTR
 import describe.utils
 import pickle
 import numpy as np
+import matplotlib
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as mpl
+import scipy.sparse.linalg
+import json
 
 # Open the dataset
 inp = "../data/test/test.pickle"
@@ -76,9 +80,32 @@ for i_mbtr in mbtr:
     x = np.arange(merged.shape[0])
 
     # For plotting the spectra
-    mpl.plot(x, merged)
-    mpl.show()
+    #mpl.plot(x, merged)
+    #mpl.show()
 
 # TODO: Create a distance matrix between the spectras of all different samples.
 # This should produce a (nsamples x nsamples) array. These distancess could
 # then be directly used as input for a graph construction.
+
+num_samples = mbtr.shape[0]
+links = []
+
+for i in range(num_samples):
+    for j in range(num_samples):
+        i_mbtr = mbtr[i,:]
+        j_mbtr = mbtr[j,:]
+        diff = i_mbtr - j_mbtr
+        d = scipy.sparse.linalg.norm(diff)
+        ij_link = {"source":i,"target":j,"value":np.exp(-d)}
+        links.append(ij_link)
+
+nodes = []
+
+for i in range(num_samples):
+    i_node = {"id":i}
+    nodes.append(i_node)
+
+graph = {"nodes":nodes,"links":links}
+
+with open("graph.json","w") as fout:
+    json.dump(graph,fout,indent=2)
