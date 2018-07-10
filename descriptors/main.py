@@ -11,12 +11,25 @@ import scipy.sparse.linalg
 import json
 
 # Open the dataset
-inp = "../data/test/test.pickle"
+inp = "../data/30k/aflowlib_all_combined.pickle"
 out = "./"
 nsamples = None
 ncores = 4
 with open(inp, "rb") as fin:
     dataset = pickle.load(fin)
+keys = list(dataset.keys())[:5000]
+
+new_dataset = {}
+for key in keys:
+    i_atoms = dataset[key]["atoms"]
+    n_atoms = len(i_atoms)
+    if n_atoms < 20:
+        new_dataset[key] = dataset[key]
+dataset = new_dataset
+
+# print(dataset[keys[0]].keys())
+# print(dataset[keys[0]]["lattice_system_relax"])
+
 
 # Find out statistics about the dataset. These are used when initializing the
 # MBTR setup.
@@ -68,11 +81,13 @@ mbtr = MBTR(
 )
 
 mbtr = create_parallel(dataset, ncores, nsamples, mbtr)
+num_samples = mbtr.shape[0]
 # scipy.sparse.save_npz(".mbtr.npz", mbtr)
 
 # Create a spectra where all pairwise distances have been merged
+merged_mbtr = np.zeros((num_samples, 100))
 n_pairs = int(mbtr.shape[1]/n)
-for i_mbtr in mbtr:
+for i, i_mbtr in enumerate(mbtr):
 
     # The individual pairwise spectra are summed up along one axis.
     merged = i_mbtr.reshape((n_pairs, n))
@@ -82,30 +97,31 @@ for i_mbtr in mbtr:
     # For plotting the spectra
     #mpl.plot(x, merged)
     #mpl.show()
+    merged_mbtr[i, :] = merged
 
-# TODO: Create a distance matrix between the spectras of all different samples.
-# This should produce a (nsamples x nsamples) array. These distancess could
-# then be directly used as input for a graph construction.
-
-num_samples = mbtr.shape[0]
+# Create the links
 links = []
-
 for i in range(num_samples):
     for j in range(num_samples):
-        i_mbtr = mbtr[i,:]
-        j_mbtr = mbtr[j,:]
+        i_mbtr = merged_mbtr[i, :]
+        j_mbtr = merged_mbtr[j, :]
         diff = i_mbtr - j_mbtr
-        d = scipy.sparse.linalg.norm(diff)
-        ij_link = {"source":i,"target":j,"value":np.exp(-d)}
-        links.append(ij_link)
+        # d = scipy.sparse.linalg.norm(diff)
+        d = np.linalg.norm(diff)
+        ij_link = {"source": i, "target": j, "value": d}
 
+        # In order to keep the size of the file maintainable, we will discard
+        # links that are above a cutoff distance.
+        if d < 10:
+            links.append(ij_link)
+
+# Creating nodes
 nodes = []
-
 for i in range(num_samples):
-    i_node = {"id":i}
+    i_node = {"id": i, "lattice_system": dataset[sorted(dataset.keys())[i]]["lattice_system_relax"]}
     nodes.append(i_node)
 
-graph = {"nodes":nodes,"links":links}
-
-with open("graph.json","w") as fout:
-    json.dump(graph,fout,indent=2)
+# Saving the graph
+graph = {"nodes": nodes, "links": links}
+with open("graph.json", "w") as fout:
+    json.dump(graph, fout, indent=2)
