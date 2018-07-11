@@ -24,6 +24,7 @@ export class AppComponent {
     lastPos:any = null;
     offset:any;
     info:any;
+    root:any;
 
     /*
      * Opens the file selected by the user, parses the JSON and saves contents
@@ -103,6 +104,8 @@ export class AppComponent {
         this.height = positionInfo.height-3;
         this.width = positionInfo.width-3;
         this.stage = new PIXI.Container();
+        this.root = new PIXI.Container();
+        this.stage.addChild(this.root);
         this.renderer = PIXI.autoDetectRenderer(
             this.width,
             this.height,
@@ -122,7 +125,7 @@ export class AppComponent {
 
         // A layer for drawing links
         this.links = new PIXI.Graphics();
-        this.stage.addChild(this.links);
+        this.root.addChild(this.links);
 
         // Show information when mouse is over it
         // Designate circle as being interactive so it handles events
@@ -175,22 +178,18 @@ export class AppComponent {
 
             // Show information when mouse is over it
             node.gfx.mousedown = function(mouseData) {
+                console.log("Pixi");
                 this.component.showInfo(this.node);
                 mouseData.stopPropagation();
             }
 
-            // Hide information when mouse is out
-            //node.gfx.mouseout = function(mouseData) {
-                //this.alpha = 1.0;
-                //this.component.hideInfo();
-            //}
-            this.stage.addChild(node.gfx);
+            this.root.addChild(node.gfx);
         });
 
         d3.select(this.renderer.view)
             .call(d3.drag()
                 .container(this.renderer.view)
-                .subject(() => simulation.find(d3.event.x- this.stage.x, d3.event.y-this.stage.y))
+                .subject(() => simulation.find(d3.event.x- this.root.x, d3.event.y-this.root.y))
                 .on('start', this.dragstarted.bind(this))
                 .on('drag', this.dragged.bind(this))
                 .on('end', dragended));
@@ -241,8 +240,8 @@ export class AppComponent {
 
     mouseMove(e) {
         if (this.lastPos) {
-            this.stage.x += (e.offsetX-this.lastPos.x);
-            this.stage.y += (e.offsetY-this.lastPos.y);
+            this.root.x += (e.offsetX-this.lastPos.x);
+            this.root.y += (e.offsetY-this.lastPos.y);
             this.lastPos = {x: e.offsetX, y: e.offsetY};
             this.render();  // We need to ask for manual render
         }
