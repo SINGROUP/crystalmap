@@ -23,6 +23,7 @@ export class AppComponent {
     colour:any;
     lastPos:any = null;
     offset:any;
+    info:any;
 
     /*
      * Opens the file selected by the user, parses the JSON and saves contents
@@ -123,8 +124,28 @@ export class AppComponent {
         this.links = new PIXI.Graphics();
         this.stage.addChild(this.links);
 
+        // Show information when mouse is over it
+        // Designate circle as being interactive so it handles events
+        this.stage.interactive = true;
+
+        // Create hit area, needed for interactivity
+        this.stage.hitArea = new PIXI.Rectangle(0, 0, this.width, this.height);
+        this.stage.component = this;
+        this.stage.mousedown = function(mouseData) {
+            this.component.hideInfo();
+        }
+
         this.update();
         this.changeThreshold(this.threshold);
+        this.animate();
+    }
+
+    showInfo(info) {
+        this.info = info;
+    }
+
+    hideInfo() {
+        this.info = null;
     }
 
     update() {
@@ -142,6 +163,27 @@ export class AppComponent {
             node.gfx.lineStyle(1.5, 0xFFFFFF);
             node.gfx.beginFill(this.colour(node.lattice_system));
             node.gfx.drawCircle(0, 0, 5);
+
+            // Designate circle as being interactive so it handles events
+            node.gfx.interactive = true;
+
+            // Create hit area, needed for interactivity
+            node.gfx.hitArea = new PIXI.Circle(0, 0, 5);
+
+            node.gfx.component = this;
+            node.gfx.node = node;
+
+            // Show information when mouse is over it
+            node.gfx.mousedown = function(mouseData) {
+                this.component.showInfo(this.node);
+                mouseData.stopPropagation();
+            }
+
+            // Hide information when mouse is out
+            //node.gfx.mouseout = function(mouseData) {
+                //this.alpha = 1.0;
+                //this.component.hideInfo();
+            //}
             this.stage.addChild(node.gfx);
         });
 
@@ -225,6 +267,11 @@ export class AppComponent {
         });
         this.links.endFill();
 
+        this.renderer.render(this.stage);
+    }
+
+    animate() {
+        requestAnimationFrame(this.animate.bind(this));
         this.renderer.render(this.stage);
     }
 }

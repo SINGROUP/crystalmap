@@ -34,7 +34,15 @@
             </div>
         </div>
         <!--Canvas-->
-        <div id="canvas" (mouseup)="mouseUp($event)" (contextmenu)="mouseDown($event)" (mousemove)="mouseMove($event)">
+        <div id="canvas" (mousedown)="hideInfo()" (mouseup)="mouseUp($event)" (contextmenu)="mouseDown($event)" (mousemove)="mouseMove($event)">
         </div>
+
+    </div>
+
+    <!--Node Info-->
+    <div id="nodeinfo" *ngIf="info" [hidden]="!info">
+        <div *ngIf="info">AFLOW id: <a href="http://aflowlib.org/material.php?id={{info.aflow_id}}">{{info.aflow_id}}</a></div>
+        <div *ngIf="info">Lattice system: {{info.lattice_system}}</div>
+        <div *ngIf="info">Formula: {{info.formula}}</div>
     </div>
 </div>

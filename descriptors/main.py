@@ -17,7 +17,7 @@ nsamples = None
 ncores = 4
 with open(inp, "rb") as fin:
     dataset = pickle.load(fin)
-keys = list(dataset.keys())[:5000]
+keys = list(dataset.keys())[:2000]
 
 new_dataset = {}
 for key in keys:
@@ -117,8 +117,14 @@ for i in range(num_samples):
 
 # Creating nodes
 nodes = []
+sorted_keys = sorted(dataset.keys())
 for i in range(num_samples):
-    i_node = {"id": i, "lattice_system": dataset[sorted(dataset.keys())[i]]["lattice_system_relax"]}
+    i_node = {
+        "id": i,
+        "lattice_system": dataset[sorted_keys[i]]["lattice_system_relax"],
+        "aflow_id": sorted_keys[i],
+        "formula": dataset[sorted_keys[i]]["atoms"].get_chemical_formula(),
+    }
     nodes.append(i_node)
 
 # Saving the graph
