@@ -11,19 +11,32 @@ import scipy.sparse.linalg
 import json
 
 # Open the dataset
-inp = "../data/test/test.pickle"
+inp = "../data/30k/aflowlib_all_combined.pickle"
 out = "./"
 nsamples = None
 ncores = 4
 with open(inp, "rb") as fin:
     dataset = pickle.load(fin)
+dataset_new = {}
+keys = list(dataset.keys())[0:100]
+keys_new = []
+for key in keys:
+    if len(dataset[key]["atoms"]) < 10:
+        dataset_new[key] = dataset[key]
+        keys_new.append(key)
+
+dataset = dataset_new
+keys = keys_new
+print(len(keys_new))
 
 # Find out statistics about the dataset. These are used when initializing the
 # MBTR setup.
-samples = [dataset[x]["atoms"] for x in dataset.keys()]
+samples = [dataset[x]["atoms"] for x in keys]
 stats = describe.utils.system_stats(samples)
 atomic_numbers = stats["atomic_numbers"]
 min_distance = stats["min_distance"]
+
+#print(atomic_numbers)
 
 # Define the MBTR settings
 k = 2
@@ -96,8 +109,10 @@ for i in range(num_samples):
         j_mbtr = mbtr[j,:]
         diff = i_mbtr - j_mbtr
         d = scipy.sparse.linalg.norm(diff)
-        ij_link = {"source":i,"target":j,"value":np.exp(-d)}
-        links.append(ij_link)
+        ij_link = {"source":i,"target":j,"value":10*np.exp(-d*0.1)}
+        if ij_link["value"] > 1:
+            links.append(ij_link)
+        #print(d)
 
 nodes = []
 
