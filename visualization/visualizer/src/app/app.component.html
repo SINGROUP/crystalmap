@@ -44,5 +44,11 @@
         <div *ngIf="info">AFLOW id: <a href="http://aflowlib.org/material.php?id={{info.aflow_id}}">{{info.aflow_id}}</a></div>
         <div *ngIf="info">Lattice system: {{info.lattice_system}}</div>
         <div *ngIf="info">Formula: {{info.formula}}</div>
+        <div *ngIf="info">Space group: {{info.spacegroup_relax}}</div>
+        <div *ngIf="info">Prototype: {{info.prototype}}</div>
+        <div *ngIf="info">Bravais lattice: {{info.bravais_lattice_relax}}</div>
+        <div *ngIf="info">Pearson symbol: {{info.pearson_symbol_relax}}</div>
+        <div *ngIf="info">Number of atoms: {{info.natoms}}</div>
+        <div *ngIf="info">Energy per cell: {{info.energy_cell}}</div>
     </div>
 </div>

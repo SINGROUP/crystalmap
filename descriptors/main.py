@@ -40,7 +40,7 @@ min_distance = stats["min_distance"]
 
 # Define the MBTR settings
 k = 2
-sigma = 0.01
+sigma = 0.02
 decay = 0.5
 n = 100
 mbtr = MBTR(
@@ -103,27 +103,43 @@ for i, i_mbtr in enumerate(mbtr):
 links = []
 for i in range(num_samples):
     for j in range(num_samples):
-        i_mbtr = merged_mbtr[i, :]
-        j_mbtr = merged_mbtr[j, :]
-        diff = i_mbtr - j_mbtr
-        # d = scipy.sparse.linalg.norm(diff)
-        d = np.linalg.norm(diff)
-        ij_link = {"source": i, "target": j, "value": d}
 
-        # In order to keep the size of the file maintainable, we will discard
-        # links that are above a cutoff distance.
-        if d < 10:
-            links.append(ij_link)
+        # Only take the upper diagonal part of the connectivity matrix
+        if j > i:
+            i_mbtr = merged_mbtr[i, :]
+            j_mbtr = merged_mbtr[j, :]
+            # i_mbtr = mbtr[i, :]
+            # j_mbtr = mbtr[j, :]
+            diff = i_mbtr - j_mbtr
+            # d = scipy.sparse.linalg.norm(diff)
+            d = np.linalg.norm(diff)
+            ij_link = {"source": i, "target": j, "value": d}
+
+            # In order to keep the size of the file maintainable, we will discard
+            # links that are above a cutoff distance.
+            if d < 10:
+                links.append(ij_link)
 
 # Creating nodes
 nodes = []
 sorted_keys = sorted(dataset.keys())
 for i in range(num_samples):
+    entry = dataset[sorted_keys[i]]
     i_node = {
         "id": i,
-        "lattice_system": dataset[sorted_keys[i]]["lattice_system_relax"],
+        "lattice_system": entry["lattice_system_relax"],
         "aflow_id": sorted_keys[i],
-        "formula": dataset[sorted_keys[i]]["atoms"].get_chemical_formula(),
+        "formula": entry["atoms"].get_chemical_formula(),
+        "spacegroup_relax": entry["spacegroup_relax"],
+        "prototype": entry["prototype"],
+        "gap_type": entry["gap_type"],
+        "bravais_lattice_relax": entry["Bravais_lattice_relax"],
+        "gap": entry["gap"],
+        "gap_fit": entry["gap_fit"],
+        "pearson_symbol_relax": entry["Pearson_symbol_relax"],
+        "energy_cell": entry["energy_cell"],
+        "icsd": entry["icsd"],
+        "natoms": entry["natoms"],
     }
     nodes.append(i_node)
 
