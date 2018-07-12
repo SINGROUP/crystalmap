@@ -17,17 +17,19 @@ nsamples = None
 ncores = 4
 with open(inp, "rb") as fin:
     dataset = pickle.load(fin)
-dataset_new = {}
-keys = list(dataset.keys())[0:100]
-keys_new = []
-for key in keys:
-    if len(dataset[key]["atoms"]) < 10:
-        dataset_new[key] = dataset[key]
-        keys_new.append(key)
 
-dataset = dataset_new
-keys = keys_new
-print(len(keys_new))
+keys = list(dataset.keys())[:2000]
+
+new_dataset = {}
+for key in keys:
+    i_atoms = dataset[key]["atoms"]
+    n_atoms = len(i_atoms)
+    if n_atoms < 20:
+        new_dataset[key] = dataset[key]
+dataset = new_dataset
+
+# print(dataset[keys[0]].keys())
+# print(dataset[keys[0]]["lattice_system_relax"])
 
 # Find out statistics about the dataset. These are used when initializing the
 # MBTR setup.
@@ -40,7 +42,7 @@ min_distance = stats["min_distance"]
 
 # Define the MBTR settings
 k = 2
-sigma = 0.01
+sigma = 0.02
 decay = 0.5
 n = 100
 mbtr = MBTR(
@@ -81,11 +83,13 @@ mbtr = MBTR(
 )
 
 mbtr = create_parallel(dataset, ncores, nsamples, mbtr)
+num_samples = mbtr.shape[0]
 # scipy.sparse.save_npz(".mbtr.npz", mbtr)
 
 # Create a spectra where all pairwise distances have been merged
+merged_mbtr = np.zeros((num_samples, 100))
 n_pairs = int(mbtr.shape[1]/n)
-for i_mbtr in mbtr:
+for i, i_mbtr in enumerate(mbtr):
 
     # The individual pairwise spectra are summed up along one axis.
     merged = i_mbtr.reshape((n_pairs, n))
@@ -95,32 +99,53 @@ for i_mbtr in mbtr:
     # For plotting the spectra
     #mpl.plot(x, merged)
     #mpl.show()
+    merged_mbtr[i, :] = merged
 
-# TODO: Create a distance matrix between the spectras of all different samples.
-# This should produce a (nsamples x nsamples) array. These distancess could
-# then be directly used as input for a graph construction.
-
-num_samples = mbtr.shape[0]
+# Create the links
 links = []
-
 for i in range(num_samples):
     for j in range(num_samples):
-        i_mbtr = mbtr[i,:]
-        j_mbtr = mbtr[j,:]
-        diff = i_mbtr - j_mbtr
-        d = scipy.sparse.linalg.norm(diff)
-        ij_link = {"source":i,"target":j,"value":10*np.exp(-d*0.1)}
-        if ij_link["value"] > 1:
-            links.append(ij_link)
-        #print(d)
 
+        # Only take the upper diagonal part of the connectivity matrix
+        if j > i:
+            i_mbtr = merged_mbtr[i, :]
+            j_mbtr = merged_mbtr[j, :]
+            # i_mbtr = mbtr[i, :]
+            # j_mbtr = mbtr[j, :]
+            diff = i_mbtr - j_mbtr
+            # d = scipy.sparse.linalg.norm(diff)
+            d = np.linalg.norm(diff)
+            ij_link = {"source": i, "target": j, "value": d}
+
+            # In order to keep the size of the file maintainable, we will discard
+            # links that are above a cutoff distance.
+            if d < 10:
+                links.append(ij_link)
+
+# Creating nodes
 nodes = []
-
+sorted_keys = sorted(dataset.keys())
 for i in range(num_samples):
-    i_node = {"id":i}
+    entry = dataset[sorted_keys[i]]
+    i_node = {
+        "id": i,
+        "lattice_system": entry["lattice_system_relax"],
+        "aflow_id": sorted_keys[i],
+        "formula": entry["atoms"].get_chemical_formula(),
+        "spacegroup_relax": entry["spacegroup_relax"],
+        "prototype": entry["prototype"],
+        "gap_type": entry["gap_type"],
+        "bravais_lattice_relax": entry["Bravais_lattice_relax"],
+        "gap": entry["gap"],
+        "gap_fit": entry["gap_fit"],
+        "pearson_symbol_relax": entry["Pearson_symbol_relax"],
+        "energy_cell": entry["energy_cell"],
+        "icsd": entry["icsd"],
+        "natoms": entry["natoms"],
+    }
     nodes.append(i_node)
 
-graph = {"nodes":nodes,"links":links}
-
-with open("graph.json","w") as fout:
-    json.dump(graph,fout,indent=2)
+# Saving the graph
+graph = {"nodes": nodes, "links": links}
+with open("graph.json", "w") as fout:
+    json.dump(graph, fout, indent=2)

@@ -21,6 +21,8 @@ def create(data):
 
     # Create descriptors for the dataset
     for i_sample, sample_id in enumerate(samples):
+
+        print("{} %".format(i_sample/n_samples*100))
         # Set charges and create descriptors
         sample = dataset[sample_id]
         system = sample["atoms"]
