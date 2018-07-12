@@ -52,7 +52,7 @@ export class AppComponent {
         // Defines the simulation forces
         let simulation = d3.forceSimulation()
             .force('link', d3.forceLink().id((d) => d.id))              // Harmonic spring
-            .force('charge', d3.forceManyBody().strength(-30))          // Long-range charge
+            .force('charge', d3.forceManyBody().strength(-300))          // Long-range charge
             .force('center', d3.forceCenter(width / 2, height / 2));    // Centering force
 
         // A layer for drawing links
