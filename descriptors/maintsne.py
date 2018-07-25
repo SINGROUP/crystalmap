@@ -5,25 +5,27 @@ import describe.utils
 import pickle
 import numpy as np
 import matplotlib
+#import pylab
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as mpl
 import scipy.sparse.linalg
 import json
+import tsne
 
 # Import DBSCAN-related things
 from sklearn.cluster import DBSCAN
 from sklearn import metrics
 
 # Open the dataset
-#inp = "../data/30k/aflowlib_all_combined.pickle"
-inp = "../data/test/test.pickle"
+inp = "../data/30k/aflowlib_all_combined.pickle"
+#inp = "../data/test/test.pickle"
 out = "./"
 nsamples = None
 ncores = 4
 with open(inp, "rb") as fin:
     dataset = pickle.load(fin)
 
-keys = list(dataset.keys())[:1000]
+keys = list(dataset.keys())[:100]
 
 new_dataset = {}
 for key in keys:
@@ -106,31 +108,7 @@ for i, i_mbtr in enumerate(mbtr):
     #mpl.show()
     merged_mbtr[i, :] = merged
 
-# Create graph with DBSCAN
-
-
-# Create the links
-links = []
-for i in range(num_samples):
-    for j in range(num_samples):
-
-        # Only take the upper diagonal part of the connectivity matrix
-        if j > i:
-            i_mbtr = merged_mbtr[i, :]
-            j_mbtr = merged_mbtr[j, :]
-            # i_mbtr = mbtr[i, :]
-            # j_mbtr = mbtr[j, :]
-            diff = i_mbtr - j_mbtr
-            # d = scipy.sparse.linalg.norm(diff)
-            d = np.linalg.norm(diff)
-            ij_link = {"source": i, "target": j, "value": d}
-
-            # In order to keep the size of the file maintainable, we will discard
-            # links that are above a cutoff distance.
-            if d < 10:
-                links.append(ij_link)
-
-# Creating nodes
+# Create labels
 nodes = []
 sorted_keys = sorted(dataset.keys())
 for i in range(num_samples):
@@ -153,7 +131,17 @@ for i in range(num_samples):
     }
     nodes.append(i_node)
 
-# Saving the graph
-graph = {"nodes": nodes, "links": links}
-with open("graph.json", "w") as fout:
-    json.dump(graph, fout, indent=2)
+# Normalize data set
+norm = merged_mbtr.max()
+merged_mbtr = (1/norm)*merged_mbtr
+
+# Implement t-SNE method
+X = merged_mbtr
+print(X.shape)
+labels = nodes
+Y = tsne.tsne(X, 2, n, 50.0)
+print(Y)
+mpl.scatter(Y[:, 0], Y[:, 1],s = 20)
+mpl.show()
+#pylab.scatter(Y[:, 0], Y[:, 1], 20, labels)
+#pylab.show()
