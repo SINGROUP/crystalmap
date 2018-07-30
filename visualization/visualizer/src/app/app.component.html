@@ -9,46 +9,55 @@
         <!--Sidebar-->
         <div id="sidebar">
             <div class="option">
-                <h2>Select JSON file</h2>
+                <h3>Select graph file</h3>
                 <label id="openlabel">Open
-                    <input #test type="file" id="file-input" (change)="open(test)"/>
+                    <input #graph type="file" id="file-input" (change)="openGraph(graph)"/>
                 </label>
             </div>
             <div class="option">
-                <label>Charge</label>
-                <input #chrg (input)="changeCharge(chrg.value)" type="range" min="-100" max="0" step="1" value={{charge}} class="slider">
+                <h3>Select coordinate file</h3>
+                <label id="openlabel">Open
+                    <input #coord type="file" id="file-input" (change)="openCoordinates(coord)"/>
+                </label>
             </div>
-            <div class="option">
-                <label>Distance</label>
-                <input #dist (input)="changeDistance(dist.value)" type="range" min="0.1" max="100" step="1" value={{distance}} class="slider">
-            </div>
-            <div class="option">
-                <label>Threshold</label>
-                <input #thr (input)="changeThreshold(thr.value)" type="range" min="0" max="10" step="0.5" value="{{threshold}}" class="slider">
-            </div>
-            <div class="option">
-                <label>Colouring</label>
-                <select>
-                    <option value="lattice_system">Lattice system</option>
-                </select>
+            <div *ngIf="vizType == 'graph'">
+                <h3>Options</h3>
+                <div class="option">
+                    <label>Charge</label>
+                    <input #chrg (input)="changeCharge(chrg.value)" type="range" min="-50" max="0" step="0.5" value={{charge}} class="slider">
+                </div>
+                <div class="option">
+                    <label>Distance</label>
+                    <input #dist (input)="changeDistance(dist.value)" type="range" min="0.1" max="100" step="1" value={{distance}} class="slider">
+                </div>
+                <div class="option">
+                    <label>Threshold</label>
+                    <input #thr (input)="changeThreshold(thr.value)" type="range" min="0" max="10" step="0.5" value="{{threshold}}" class="slider">
+                </div>
+                <div class="option">
+                    <label>Colouring</label>
+                    <select>
+                        <option value="lattice_system">Lattice system</option>
+                    </select>
+                </div>
             </div>
         </div>
         <!--Canvas-->
-        <div id="canvas" (mousedown)="hideInfo()" (mouseup)="mouseUp($event)" (contextmenu)="mouseDown($event)" (mousemove)="mouseMove($event)">
+        <div id="canvas" (mouseup)="mouseUp($event)" (contextmenu)="mouseDown($event)" (mousemove)="mouseMove($event)">
         </div>
 
     </div>
 
     <!--Node Info-->
-    <div id="nodeinfo" *ngIf="info" [hidden]="!info">
-        <div *ngIf="info">AFLOW id: <a href="http://aflowlib.org/material.php?id={{info.aflow_id}}">{{info.aflow_id}}</a></div>
-        <div *ngIf="info">Lattice system: {{info.lattice_system}}</div>
-        <div *ngIf="info">Formula: {{info.formula}}</div>
-        <div *ngIf="info">Space group: {{info.spacegroup_relax}}</div>
-        <div *ngIf="info">Prototype: {{info.prototype}}</div>
-        <div *ngIf="info">Bravais lattice: {{info.bravais_lattice_relax}}</div>
-        <div *ngIf="info">Pearson symbol: {{info.pearson_symbol_relax}}</div>
-        <div *ngIf="info">Number of atoms: {{info.natoms}}</div>
-        <div *ngIf="info">Energy per cell: {{info.energy_cell}}</div>
+    <div id="nodeinfo" *ngIf="info">
+        <div>AFLOW id: <a href="http://aflowlib.org/material.php?id={{info.aflow_id}}">{{info.aflow_id}}</a></div>
+        <div>Lattice system: {{info.lattice_system}}</div>
+        <div>Formula: {{info.formula}}</div>
+        <div>Space group: {{info.spacegroup_relax}}</div>
+        <div>Prototype: {{info.prototype}}</div>
+        <div>Bravais lattice: {{info.bravais_lattice_relax}}</div>
+        <div>Pearson symbol: {{info.pearson_symbol_relax}}</div>
+        <div>Number of atoms: {{info.natoms}}</div>
+        <div>Energy per cell: {{info.energy_cell}}</div>
     </div>
 </div>
