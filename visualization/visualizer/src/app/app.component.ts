@@ -355,6 +355,7 @@ export class AppComponent {
     }
 
     wheel(e) {
+        let delta = 0;
         if (e.deltaY > 0) {
             let delta = -0.15;
         } else if (e.deltaY < 0) {
