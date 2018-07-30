@@ -1,11 +1,6 @@
 # import scipy.sparse
-from creatembtr import create_parallel
-from describe.descriptors import MBTR
-import describe.utils
-import pickle
 import numpy as np
 import matplotlib
-#import pylab
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as mpl
 import scipy.sparse.linalg
@@ -16,132 +11,32 @@ import tsne
 from sklearn.cluster import DBSCAN
 from sklearn import metrics
 
-# Open the dataset
-inp = "../data/30k/aflowlib_all_combined.pickle"
-#inp = "../data/test/test.pickle"
-out = "./"
-nsamples = None
-ncores = 4
-with open(inp, "rb") as fin:
-    dataset = pickle.load(fin)
+# Read files in
+merged_mbtr = np.loadtxt('merged_mbtr.txt')
+print(merged_mbtr)
+n = (1/4)*len(merged_mbtr[0])
+print(n)
 
-keys = list(dataset.keys())[:100]
-
-new_dataset = {}
-for key in keys:
-    i_atoms = dataset[key]["atoms"]
-    n_atoms = len(i_atoms)
-    if n_atoms < 20:
-        new_dataset[key] = dataset[key]
-dataset = new_dataset
-
-# print(dataset[keys[0]].keys())
-# print(dataset[keys[0]]["lattice_system_relax"])
-
-# Find out statistics about the dataset. These are used when initializing the
-# MBTR setup.
-samples = [dataset[x]["atoms"] for x in dataset.keys()]
-stats = describe.utils.system_stats(samples)
-atomic_numbers = stats["atomic_numbers"]
-min_distance = stats["min_distance"]
-
-#print(atomic_numbers)
-
-# Define the MBTR settings
-k = 2
-sigma = 0.02
-decay = 0.5
-n = 100
-mbtr = MBTR(
-    atomic_numbers=atomic_numbers,
-    k=[k],
-    periodic=True,
-    grid={
-        "k1": {
-            "min": min(atomic_numbers)-1,
-            "max": max(atomic_numbers)+1,
-            "sigma": sigma,
-            "n": n,
-        },
-        "k2": {
-            "min": 0,
-            "max": 1/min_distance,
-            "sigma": sigma,
-            "n": n,
-        },
-        "k2": {
-            "min": 0,
-            "max": 1,
-            "sigma": sigma,
-            "n": n,
-        },
-    },
-    weighting={
-        "k2": {
-            "function": lambda x: np.exp(-decay*x),
-            "threshold": 1e-2
-        },
-        "k3": {
-            "function": lambda x: np.exp(-decay*x),
-            "threshold": 1e-2
-        },
-    },
-    flatten=True,
-)
-
-mbtr = create_parallel(dataset, ncores, nsamples, mbtr)
-num_samples = mbtr.shape[0]
-# scipy.sparse.save_npz(".mbtr.npz", mbtr)
-
-# Create a spectra where all pairwise distances have been merged
-merged_mbtr = np.zeros((num_samples, 100))
-n_pairs = int(mbtr.shape[1]/n)
-for i, i_mbtr in enumerate(mbtr):
-
-    # The individual pairwise spectra are summed up along one axis.
-    merged = i_mbtr.reshape((n_pairs, n))
-    merged = merged.sum(axis=0).A1
-    x = np.arange(merged.shape[0])
-
-    # For plotting the spectra
-    #mpl.plot(x, merged)
-    #mpl.show()
-    merged_mbtr[i, :] = merged
-
-# Create labels
-nodes = []
-sorted_keys = sorted(dataset.keys())
-for i in range(num_samples):
-    entry = dataset[sorted_keys[i]]
-    i_node = {
-        "id": i,
-        "lattice_system": entry["lattice_system_relax"],
-        "aflow_id": sorted_keys[i],
-        "formula": entry["atoms"].get_chemical_formula(),
-        "spacegroup_relax": entry["spacegroup_relax"],
-        "prototype": entry["prototype"],
-        "gap_type": entry["gap_type"],
-        "bravais_lattice_relax": entry["Bravais_lattice_relax"],
-        "gap": entry["gap"],
-        "gap_fit": entry["gap_fit"],
-        "pearson_symbol_relax": entry["Pearson_symbol_relax"],
-        "energy_cell": entry["energy_cell"],
-        "icsd": entry["icsd"],
-        "natoms": entry["natoms"],
-    }
-    nodes.append(i_node)
-
-# Normalize data set
-norm = merged_mbtr.max()
-merged_mbtr = (1/norm)*merged_mbtr
+file = open('nodes.json')
+nodes = json.load(file)
+file.close()
 
 # Implement t-SNE method
 X = merged_mbtr
 print(X.shape)
-labels = nodes
-Y = tsne.tsne(X, 2, n, 50.0)
+#labels = nodes
+Y = tsne.tsne(X, 2, int(n), 5.0)
 print(Y)
+
+# Add X and Y to node dictionary
+for i, loc in enumerate(Y):
+    i_node = nodes[i]
+    i_node['x'] = loc[0]
+    i_node['y'] = loc[1]
+
+file = open('nodes_json.json','w')
+json.dump(nodes,file)
+file.close()
+
 mpl.scatter(Y[:, 0], Y[:, 1],s = 20)
 mpl.show()
-#pylab.scatter(Y[:, 0], Y[:, 1], 20, labels)
-#pylab.show()
