@@ -26,6 +26,8 @@ export class AppComponent {
     info:any;
     root:any;
     vizType:string = null;
+    properties:string[] = [];
+    property:string = null;
     zoom:number = 1;
 
     /*
@@ -78,6 +80,31 @@ export class AppComponent {
 
         // Restarts the simulation (important if simulation has already slowed down)
         this.simulation.alpha(1).restart();
+    }
+
+    /**
+     * Initializes the colouring dropdown based on node information
+     */
+    initializeColouringOptions(nodes) {
+        let firstNode = nodes[0];
+        this.properties = Object.getOwnPropertyNames(firstNode);
+        for (let prop of this.properties) {
+            console.log(prop);
+        }
+    }
+
+    changeProperty(name:string) {
+
+        // Defines the node style
+        this.graph.nodes.forEach((node) => {
+
+            // Clear
+            node.gfx.clear();
+
+            // Draw with new colour
+            node.gfx.beginFill(this.colour(node.lattice_system));
+            node.gfx.drawCircle(0, 0, 5);
+        })
     }
 
     /*
@@ -170,6 +197,8 @@ export class AppComponent {
 
         this.setupCanvas();
 
+        this.initializeColouringOptions(this.graph.nodes);
+
         // Defines the color of the nodes
         this.colour = (function() {
             let scale = d3.scaleOrdinal(d3.schemeCategory20);
@@ -234,12 +263,10 @@ export class AppComponent {
     }
 
     showInfo(info) {
-        console.log(info);
         this.info = info;
     }
 
     hideInfo() {
-        console.log("Hiding");
         this.info = null;
     }
 
@@ -321,8 +348,6 @@ export class AppComponent {
         let startY = d3.event.subject.starty;
         let dx = (1/this.zoom)*(d3.event.x - startX);
         let dy = (1/this.zoom)*(d3.event.y - startY);
-        console.log(dx);
-        console.log(dy);
         d3.event.subject.fx = startX + dx;
         d3.event.subject.fy = startY + dy;
     }
@@ -357,9 +382,9 @@ export class AppComponent {
     wheel(e) {
         let delta = 0;
         if (e.deltaY > 0) {
-            let delta = -0.15;
+            delta = -0.15;
         } else if (e.deltaY < 0) {
-            let delta = 0.15;
+            delta = 0.15;
         }
 
         let newZoom = this.root.scale.x + delta;
